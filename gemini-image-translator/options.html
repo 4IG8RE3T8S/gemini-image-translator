@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<title>ตั้งค่า Gemini Image Translator</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px;
+    max-width: 480px;
+    margin: 0 auto;
+    color: #202124;
+    line-height: 1.5;
+  }
+  h3 { margin-top: 0; color: #1a73e8; display: flex; align-items: center; gap: 8px; font-size: 18px; }
+  h4 { margin: 18px 0 8px 0; font-size: 14px; color: #3c4043; }
+  label { display: block; margin-top: 12px; font-size: 13px; font-weight: 500; color: #3c4043; }
+  input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    font-size: 13px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+  input:focus { border-color: #1a73e8; outline: none; box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+  .hint { font-size: 12px; color: #70757a; margin-top: 4px; }
+  .btn-primary {
+    background: #1a73e8;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+  .btn-primary:hover { background: #1557b0; }
+  .btn-secondary {
+    background: #ffffff;
+    color: #1a73e8;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-secondary:hover { background: #f8f9fa; border-color: #1a73e8; }
+  .card {
+    background: #f8f9fa;
+    border: 1px solid #e8eaed;
+    border-radius: 6px;
+    padding: 14px;
+    margin-top: 14px;
+  }
+  #status { margin-top: 10px; font-size: 13px; min-height: 18px; font-weight: 500; }
+  .status-success { color: #1e8e3e; }
+  .status-error { color: #d93025; }
+  .status-info { color: #1a73e8; }
+  .security-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #137333;
+    background: #e6f4ea;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+  <h3>
+    Gemini Image Translator
+    <span class="security-badge">🛡️ ปลอดภัย (Proxy Mode)</span>
+  </h3>
+  <div class="hint">เชื่อมต่อผ่าน Backend Proxy Server เพื่อป้องกันการรั่วไหลของ Gemini API Key</div>
+
+  <div class="card">
+    <h4 style="margin-top: 0;">1. เซิร์ฟเวอร์และยืนยันตัวตน (Backend & Auth)</h4>
+
+    <label>Backend Proxy URL (Render หรือ Localhost)
+      <input type="text" id="backendUrl" placeholder="https://your-app.onrender.com หรือ http://127.0.0.1:8000" />
+    </label>
+    <div class="hint">ใส่ URL ที่ได้จาก <b>Render</b> (เช่น https://xxx.onrender.com) หรือเซิร์ฟเวอร์ในเครื่อง</div>
+
+    <label>User Auth Token
+      <input type="password" id="authToken" placeholder="dev-token-secret-68310545 หรือ usr_..." />
+    </label>
+    <div class="hint">Token ยืนยันตัวตนกับเซิร์ฟเวอร์ (สามารถกรอกเองหรือเข้าสู่ระบบด้านล่าง)</div>
+
+    <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
+      <button id="testConnection" class="btn-secondary">🔍 ทดสอบการเชื่อมต่อ</button>
+      <span id="testStatus" style="font-size: 12px;"></span>
+    </div>
+
+    <!-- Quick Login Form -->
+    <details style="margin-top: 12px; font-size: 13px; color: #555;">
+      <summary style="cursor: pointer; color: #1a73e8; font-weight: 500;">หรือเข้าสู่ระบบเพื่อขอ Token อัตโนมัติ</summary>
+      <div style="margin-top: 8px; padding: 8px; background: #fff; border: 1px solid #dadce0; border-radius: 4px;">
+        <label style="margin-top: 2px;">ชื่อผู้ใช้ (Username)
+          <input type="text" id="loginUser" placeholder="admin หรือ demo" />
+        </label>
+        <label style="margin-top: 6px;">รหัสผ่าน (Password)
+          <input type="password" id="loginPass" placeholder="••••••••" />
+        </label>
+        <button id="loginBtn" class="btn-secondary" style="margin-top: 10px; width: 100%;">เข้าสู่ระบบ (Login)</button>
+        <div id="loginStatus" style="font-size: 12px; margin-top: 4px;"></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top: 0;">2. การแปลภาษา (Translation Settings)</h4>
+
+    <label>Model
+      <input type="text" id="model" placeholder="gemini-2.5-flash" />
+    </label>
+    <div class="hint">ชื่อรุ่นโมเดล Gemini เช่น gemini-2.5-flash หรือ gemini-1.5-flash</div>
+
+    <label>ภาษาที่ต้องการแปลเป็น (Target Language)
+      <input type="text" id="targetLang" placeholder="Thai" />
+    </label>
+  </div>
+
+  <button id="save" class="btn-primary" style="width: 100%;">💾 บันทึกการตั้งค่า</button>
+  <div id="status"></div>
+
+  <div style="margin-top: 24px; border-top: 1px solid #e0e0e0; padding-top: 16px;">
+    <h4 style="margin: 0 0 4px 0;">แคชผลการแปล (Cache)</h4>
+    <div class="hint" id="cacheInfo">กำลังตรวจสอบจำนวนแคช...</div>
+    <button id="clearCache" class="btn-secondary" style="margin-top: 8px; color: #5f6368;">ล้างแคชผลแปลทั้งหมด</button>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

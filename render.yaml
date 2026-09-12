@@ -1,0 +1,23 @@
+# render.yaml — Render Blueprint Configuration
+# ดูรายละเอียดที่ https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: gemini-translator-proxy
+    runtime: python
+    plan: free
+    region: singapore # หรือ oregon, frankfurt, ohio
+    rootDir: server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # Render จะมีช่องให้กรอก Gemini API Key ใน Dashboard
+      - key: AUTH_SECRET_KEY
+        generateValue: true # Render จะสุ่มสร้าง Secret Key ให้โดยอัตโนมัติ
+      - key: DEFAULT_MODEL
+        value: gemini-2.5-flash
+      - key: ADMIN_PASSWORD
+        generateValue: true # Render จะสุ่มสร้างรหัสผ่าน admin ให้
+      - key: PYTHON_VERSION
+        value: 3.11.9
