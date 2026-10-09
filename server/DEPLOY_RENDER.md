@@ -13,7 +13,7 @@
 - **Environment Variables**:
   - `GEMINI_API_KEY`: *(ใส่ Gemini API Key ที่ได้จาก https://aistudio.google.com)*
   - `AUTH_SECRET_KEY`: `dev-token-secret-68310545` *(หรือกำหนด Secret Token ตามต้องการ)*
-  - `DEFAULT_MODEL`: `gemini-2.5-flash`
+  - `DEFAULT_MODEL`: `gemini-2.0-flash`
 
 ---
 
@@ -41,7 +41,7 @@
    - เลื่อนลงมาที่หัวข้อ **Environment Variables** แล้วกด **Add Environment Variable**:
      - `GEMINI_API_KEY` = *[Gemini API Key ของคุณ เช่น AIzaSy...]*
      - `AUTH_SECRET_KEY` = `dev-token-secret-68310545` *(หรือ Token อื่นที่คุณต้องการใช้ในส่วนเสริม)*
-     - `DEFAULT_MODEL` = `gemini-2.5-flash`
+     - `DEFAULT_MODEL` = `gemini-2.0-flash`
 
 5. **กดปุ่ม Create Web Service**:
    - รอ Render ทำการ Build และ Deploy ประมาณ 1–2 นาที

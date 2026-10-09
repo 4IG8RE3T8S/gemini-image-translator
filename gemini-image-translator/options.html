@@ -120,13 +120,68 @@
     <h4 style="margin-top: 0;">2. การแปลภาษา (Translation Settings)</h4>
 
     <label>Model
-      <input type="text" id="model" placeholder="gemini-2.5-flash" />
+      <input type="text" id="model" placeholder="gemini-2.0-flash" />
     </label>
-    <div class="hint">ชื่อรุ่นโมเดล Gemini เช่น gemini-2.5-flash หรือ gemini-1.5-flash</div>
-
+    <div class="hint">ชื่อรุ่นโมเดล Gemini เช่น gemini-2.0-flash หรือ gemini-1.5-flash</div>
     <label>ภาษาที่ต้องการแปลเป็น (Target Language)
       <input type="text" id="targetLang" placeholder="Thai" />
     </label>
+    <label>ขีดจำกัดโทเค็นสูงสุด (Max Output Tokens)
+      <input type="number" id="maxOutputTokens" min="4096" max="32768" step="1024" placeholder="8192" />
+    </label>
+    <div class="hint">ค่าเริ่มต้น: 8192 เพื่อป้องกันปัญหา Gemini ตัดทอนข้อความ JSON ในรูปภาพที่มีหลายกล่องข้อความ</div>
+
+    <label style="margin-top: 12px;">สไตล์พื้นหลังข้อความแปล (Text Background Mode):
+      <select id="textBackgroundMode" style="width: 100%; padding: 8px 10px; margin-top: 4px; box-sizing: border-box; font-size: 13px; border: 1px solid #dadce0; border-radius: 4px; font-family: inherit; background: #fff;">
+        <option value="blur">🌫️ เบลอฝ้าโปร่งแสง (Frosted Glass / Backdrop Blur) — แนะนำ (บดบังตัวอักษรเดิม กลืนกับภาพ)</option>
+        <option value="solid">⬜ พื้นหลังทึบกระชับพอดีคำ (Solid Snug Background) — คมชัด ไร้แถบเทอะทะ (Padding 1-3px)</option>
+        <option value="transparent">🔍 พื้นหลังโปร่งใส 100% พร้อมขอบขาว (100% Transparent + White Stroke)</option>
+      </select>
+    </label>
+    <div class="hint">เลือกระหว่าง: <b>Blur</b> (กระจกฝ้าบังข้อความเก่าแต่เห็นภาพ), <b>Solid</b> (พื้นหลังทึบกระชับพอดีคำ), หรือ <b>Transparent</b> (โปร่งใส 100% ขอบขาว)</div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top: 0;">3. สำรองการแปลเมื่อ Token หมด (Google Translate Fallback)</h4>
+
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500;">
+      <input type="checkbox" id="enableGoogleTranslateFallback" style="width: auto; margin-top: 0;" checked />
+      เปิดใช้งาน Google Translate เมื่อ Token / โควต้า Gemini หมด
+    </label>
+    <div class="hint">เมื่อ Gemini API ติดปัญหาโควต้าเต็ม (HTTP 429 Rate Limit) ระบบจะเสนอทางเลือกหรือสลับไปใช้ Google Translate Images</div>
+
+    <label style="margin-top: 12px;">รูปแบบการทำงานเมื่อ Token หมด:
+      <select id="googleTranslateFallbackMode" style="width: 100%; padding: 8px 10px; margin-top: 4px; box-sizing: border-box; font-size: 13px; border: 1px solid #dadce0; border-radius: 4px; font-family: inherit; background: #fff;">
+        <option value="ask">ถามก่อนสลับ (Ask First with Interactive Action Bar) — แนะนำ</option>
+        <option value="auto">สลับเปิด Google Translate อัตโนมัติทันที (Auto Fallback)</option>
+      </select>
+    </label>
+    <div class="hint">ระบบจะทำการแปลและแสดงผลซ้อนทับภาพ (In-Place Overlay) บนหน้าเว็บเดิมให้ทันที โดยไม่ต้องเปิดแท็บใหม่</div>
+
+    <label style="margin-top: 12px;">รหัสภาษาสำหรับ Google Translate (Target Lang Code):
+      <input type="text" id="googleTranslateLangCode" placeholder="th (หรือเว้นว่างเพื่อตรวจจับอัตโนมัติ)" />
+    </label>
+    <div class="hint">เช่น <code>th</code> (ไทย), <code>en</code> (อังกฤษ), <code>ja</code> (ญี่ปุ่น), <code>zh-CN</code> (จีน)</div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top: 0;">4. การส่งคำขอซ้ำอัตโนมัติ (Exponential Backoff Retry)</h4>
+
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500;">
+      <input type="checkbox" id="enableRetry" style="width: auto; margin-top: 0;" checked />
+      เปิดใช้งานการส่งคำขอซ้ำอัตโนมัติด้วย Exponential Backoff
+    </label>
+    <div class="hint">เมื่อคำขอล้มเหลวจาก Rate Limit (HTTP 429) หรือปัญหาเครือข่าย/เซิร์ฟเวอร์ชั่วคราว (HTTP 5xx) ระบบจะหน่วงเวลาและลองใหม่อัตโนมัติ</div>
+
+    <label style="margin-top: 12px;">จำนวนครั้งที่ลองส่งคำขอใหม่สูงสุด (Max Retries):
+      <input type="number" id="maxRetries" min="1" max="10" value="3" />
+    </label>
+    <div class="hint">จำนวนครั้งสูงสุดที่จะส่งคำขอซ้ำก่อนยอมแพ้หรือสลับไปใช้โหมด Fallback (ค่าเริ่มต้น: 3 ครั้ง)</div>
+
+    <label style="margin-top: 12px;">เวลาหน่วงเริ่มต้น (Base Delay วินาที):
+      <input type="number" id="retryInitialDelay" min="1" max="30" value="2" />
+    </label>
+    <div class="hint">เวลาหน่วงเริ่มต้นเป็นวินาที (ค่าเริ่มต้น: 2 วินาที ซึ่งจะหน่วงเวลา <b>2, 4, 8 วินาที</b> ตามลำดับแบบทวีคูณ)</div>
   </div>
 
   <button id="save" class="btn-primary" style="width: 100%;">💾 บันทึกการตั้งค่า</button>

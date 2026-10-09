@@ -1,26 +1,86 @@
 const $ = (id) => document.getElementById(id);
 
-// โหลดการตั้งค่าจาก storage
-chrome.storage.local.get(["backendUrl", "authToken", "model", "targetLang"], (data) => {
-  $("backendUrl").value = data.backendUrl || "http://127.0.0.1:8000";
-  $("authToken").value = data.authToken || "dev-token-secret-68310545";
-  $("model").value = data.model || "gemini-2.5-flash";
-  $("targetLang").value = data.targetLang || "Thai";
-});
+// โหลดการตั้งค่าจาก storage (sync & local)
+chrome.storage.local.get(
+  [
+    "backendUrl",
+    "authToken",
+    "model",
+    "targetLang",
+    "maxOutputTokens",
+    "textBackgroundMode",
+    "textBgMode",
+    "enableGoogleTranslateFallback",
+    "googleTranslateFallbackMode",
+    "googleTranslateLangCode",
+    "enableRetry",
+    "maxRetries",
+    "retryInitialDelay"
+  ],
+  (data) => {
+    $("backendUrl").value = data.backendUrl || "http://127.0.0.1:8000";
+    $("authToken").value = data.authToken || "dev-token-secret-68310545";
+    $("model").value = data.model || "gemini-2.0-flash";
+    $("targetLang").value = data.targetLang || "Thai";
+    $("maxOutputTokens").value = data.maxOutputTokens || 8192;
+
+    const currentMode = data.textBackgroundMode || data.textBgMode || "blur";
+    if ($("textBackgroundMode")) {
+      $("textBackgroundMode").value = currentMode;
+    }
+
+    // ตรวจสอบ chrome.storage.sync เพิ่มเติม
+    if (chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.get(["textBackgroundMode"], (syncData) => {
+        if (syncData && syncData.textBackgroundMode && $("textBackgroundMode")) {
+          $("textBackgroundMode").value = syncData.textBackgroundMode;
+        }
+      });
+    }
+
+    $("enableGoogleTranslateFallback").checked = data.enableGoogleTranslateFallback !== false;
+    $("googleTranslateFallbackMode").value = data.googleTranslateFallbackMode || "ask";
+    $("googleTranslateLangCode").value = data.googleTranslateLangCode || "";
+    $("enableRetry").checked = data.enableRetry !== false;
+    $("maxRetries").value = data.maxRetries !== undefined ? data.maxRetries : 3;
+    $("retryInitialDelay").value = data.retryInitialDelay !== undefined ? data.retryInitialDelay : 2;
+  }
+);
 
 // บันทึกการตั้งค่า
 $("save").addEventListener("click", () => {
   const backendUrl = $("backendUrl").value.trim().replace(/\/+$/, "");
   const authToken = $("authToken").value.trim();
-  const model = $("model").value.trim() || "gemini-2.5-flash";
+  const model = $("model").value.trim() || "gemini-2.0-flash";
   const targetLang = $("targetLang").value.trim() || "Thai";
+  const maxOutputTokens = Math.max(4096, parseInt($("maxOutputTokens").value, 10) || 8192);
+  const textBackgroundMode = $("textBackgroundMode")?.value || "blur";
+  const enableGoogleTranslateFallback = $("enableGoogleTranslateFallback").checked;
+  const googleTranslateFallbackMode = $("googleTranslateFallbackMode").value;
+  const googleTranslateLangCode = $("googleTranslateLangCode").value.trim();
+  const enableRetry = $("enableRetry").checked;
+  const maxRetries = Math.max(1, parseInt($("maxRetries").value, 10) || 3);
+  const retryInitialDelay = Math.max(1, parseInt($("retryInitialDelay").value, 10) || 2);
+
+  if (chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set({ textBackgroundMode });
+  }
 
   chrome.storage.local.set(
     {
       backendUrl,
       authToken,
       model,
-      targetLang
+      targetLang,
+      maxOutputTokens,
+      textBackgroundMode,
+      textBgMode: textBackgroundMode,
+      enableGoogleTranslateFallback,
+      googleTranslateFallbackMode,
+      googleTranslateLangCode,
+      enableRetry,
+      maxRetries,
+      retryInitialDelay
     },
     () => {
       const statusEl = $("status");
@@ -35,10 +95,17 @@ $("save").addEventListener("click", () => {
 });
 
 // ทดสอบการเชื่อมต่อกับ Backend Proxy Server
+let testStatusTimeout = null;
 $("testConnection").addEventListener("click", async () => {
   const backendUrl = $("backendUrl").value.trim().replace(/\/+$/, "");
   const authToken = $("authToken").value.trim();
   const testStatus = $("testStatus");
+  const isRender = backendUrl.includes("onrender.com");
+
+  if (testStatusTimeout) {
+    clearTimeout(testStatusTimeout);
+    testStatusTimeout = null;
+  }
 
   if (!backendUrl) {
     testStatus.style.color = "#d93025";
@@ -47,17 +114,22 @@ $("testConnection").addEventListener("click", async () => {
   }
 
   testStatus.style.color = "#1a73e8";
-  testStatus.textContent = backendUrl.includes("onrender.com")
+  testStatus.textContent = isRender
     ? "⏳ กำลังเชื่อมต่อ... (หากเซิร์ฟเวอร์ Render กำลังหลับอยู่ อาจใช้เวลาตื่น ~30-50 วินาที)"
     : "⏳ กำลังทดสอบการเชื่อมต่อ...";
 
   try {
+    const controller = new AbortController();
+    const fetchTimeout = setTimeout(() => controller.abort(), isRender ? 60000 : 10000);
+
     const res = await fetch(`${backendUrl}/api/auth/verify`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${authToken}`
-      }
+      },
+      signal: controller.signal
     });
+    clearTimeout(fetchTimeout);
 
     if (res.ok) {
       testStatus.style.color = "#1e8e3e";
@@ -71,14 +143,21 @@ $("testConnection").addEventListener("click", async () => {
     }
   } catch (err) {
     testStatus.style.color = "#d93025";
-    testStatus.textContent = backendUrl.includes("onrender.com")
-      ? "❌ ไม่สามารถติดต่อเซิร์ฟเวอร์ Render ได้ (ตรวจสอบ URL หรือรอเซิร์ฟเวอร์ตื่น)"
-      : "❌ ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ (เปิดรันหรือยัง?)";
+    if (err.name === "AbortError") {
+      testStatus.textContent = isRender
+        ? "❌ หมดเวลารอเซิร์ฟเวอร์ Render ตอบกลับ (ลองอีกครั้งเพื่อปลุกเซิร์ฟเวอร์)"
+        : "❌ หมดเวลารอการตอบกลับจากเซิร์ฟเวอร์";
+    } else {
+      testStatus.textContent = isRender
+        ? "❌ ไม่สามารถติดต่อเซิร์ฟเวอร์ Render ได้ (ตรวจสอบ URL หรือรอเซิร์ฟเวอร์ตื่น)"
+        : "❌ ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ (เปิดรันหรือยัง?)";
+    }
   }
 
-  setTimeout(() => {
+  testStatusTimeout = setTimeout(() => {
     testStatus.textContent = "";
-  }, 4000);
+    testStatusTimeout = null;
+  }, isRender ? 8000 : 4000);
 });
 
 // Quick Login ขอรับ Token อัตโนมัติ

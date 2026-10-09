@@ -16,7 +16,7 @@ services:
       - key: AUTH_SECRET_KEY
         generateValue: true # Render จะสุ่มสร้าง Secret Key ให้โดยอัตโนมัติ
       - key: DEFAULT_MODEL
-        value: gemini-2.5-flash
+        value: gemini-2.0-flash
       - key: ADMIN_PASSWORD
         generateValue: true # Render จะสุ่มสร้างรหัสผ่าน admin ให้
       - key: PYTHON_VERSION
